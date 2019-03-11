@@ -1,0 +1,21 @@
+{
+  "dialect": "pg",
+  "connection": {
+    "host": "localhost",
+    "database": "toptal",
+    "user": "toptal",
+    "password": "toptal"
+  },
+  "interfaceNameFormat": "${table}",
+  "schemaAsNamespace": true,
+  "template": "./db-gen/template.handlebars",
+  "typeOverrides": {},
+  "filename": "./src/model/DB.d",
+  "typeMap": {
+    "Date": ["timestamptz"],
+    "number": ["float4", "int4"],
+    "any": ["jsonb"],
+    "string": ["time", "int8", "numeric"],
+    "string[]": ["_int8"]
+  }
+}

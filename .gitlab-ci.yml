@@ -1,0 +1,106 @@
+image: debian:latest
+
+.node_template: &node_job
+  image: node:8.10-alpine
+  before_script:
+    - yarn
+
+stages:
+  - build
+  - test
+  - deploy
+
+cache:
+  key: '$CI_COMMIT_SHA'
+  paths:
+    - node_modules
+
+build:
+  <<: *node_job
+  stage: build
+  script:
+    - yarn build
+  artifacts:
+    paths:
+      - dist
+
+test:
+  <<: *node_job
+  stage: test
+  script:
+    - yarn test
+
+.only-changes-serverless: &only-changes-serverless
+  only:
+    changes:
+      - serverless.yml
+
+.artifacts-deploy: &artifacts-deploy
+  artifacts:
+    paths:
+      - src
+      - node_modules
+      - serverless.yml
+      - package.json
+      - dist
+      - yarn.lock
+      - dev.env
+      - prod.env
+      - .serverless
+
+deploy:dev:
+  <<: *node_job
+  stage: deploy
+  environment:
+    name: dev
+  script:
+    - yarn deploy:dev
+  <<: *artifacts-deploy
+  only:
+    changes:
+      - serverless.yml
+    variables:
+      - $CI_COMMIT_REF_NAME == 'dev'
+
+deploy:prod:
+  <<: *node_job
+  stage: deploy
+  environment:
+    name: production
+  script:
+    - yarn deploy:prod
+  <<: *artifacts-deploy
+  only:
+    changes:
+      - serverless.yml
+    variables:
+      - $CI_COMMIT_REF_NAME == 'master'
+
+.except-changes-serverless: &except-changes-serverless
+  except:
+    changes:
+      - serverless.yml
+
+deploy:dev:function:
+  <<: *node_job
+  stage: deploy
+  environment:
+    name: dev
+  script:
+    - yarn deploy:dev function -f express
+  <<: *artifacts-deploy
+  <<: *except-changes-serverless
+  only:
+    - dev
+
+deploy:prod:function:
+  <<: *node_job
+  stage: deploy
+  environment:
+    name: production
+  script:
+    - yarn deploy:prod function -f express
+  <<: *artifacts-deploy
+  <<: *except-changes-serverless
+  only:
+    - master
